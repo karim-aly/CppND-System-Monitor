@@ -116,8 +116,26 @@ float LinuxParser::MemoryUtilization() {
   return (totalMemory - freeMemory) / totalMemory;
 }
 
-// TODO: Read and return the system uptime
-long LinuxParser::UpTime() { return 0; }
+// Read and return the system uptime
+long LinuxParser::UpTime() {
+  string line;
+  string uptime;
+  string idletime;
+
+  // open target file for reading line by line
+  std::ifstream filestream(LinuxParser::kProcDirectory + LinuxParser::kStatFilename);
+  if (filestream.is_open()) {
+    if (std::getline(filestream, line)) {
+      // split line at spaces to get first 2 parts
+      std::istringstream linestream(line);
+      if (linestream >> uptime >> idletime) {
+        // convert uptime to long and return
+        return static_cast<long>(stof(uptime));
+      }
+    }
+  }
+  return 0;
+}
 
 // TODO: Read and return the number of jiffies for the system
 long LinuxParser::Jiffies() { return 0; }
