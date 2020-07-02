@@ -74,9 +74,12 @@ unordered_map<string, string> ReadMemoryInfoFile() {
   string line;
   string key;
   string value;
+
+  // open target file for reading line by line
   std::ifstream filestream(LinuxParser::kProcDirectory + LinuxParser::kMeminfoFilename);
   if (filestream.is_open()) {
     while (std::getline(filestream, line)) {
+      // split line at spaces to get first 2 parts
       std::istringstream linestream(line);
       if (linestream >> key >> value) {
         // remove last character of the key ':'
@@ -132,11 +135,51 @@ long LinuxParser::IdleJiffies() { return 0; }
 // TODO: Read and return CPU utilization
 vector<string> LinuxParser::CpuUtilization() { return {}; }
 
-// TODO: Read and return the total number of processes
-int LinuxParser::TotalProcesses() { return 0; }
+// Read and return the total number of processes
+int LinuxParser::TotalProcesses() {
+  string line;
+  string key;
+  string value;
 
-// TODO: Read and return the number of running processes
-int LinuxParser::RunningProcesses() { return 0; }
+  // open target file for reading line by line
+  std::ifstream filestream(LinuxParser::kProcDirectory + LinuxParser::kStatFilename);
+  if (filestream.is_open()) {
+    while (std::getline(filestream, line)) {
+      // split line at spaces to get first 2 parts
+      std::istringstream linestream(line);
+      if (linestream >> key >> value) {
+        // check if key is equal to 'processes'
+        if (key == "processes") {
+          return std::stoi(value);
+        }
+      }
+    }
+  }
+  return 0;
+}
+
+// Read and return the number of running processes
+int LinuxParser::RunningProcesses() {
+  string line;
+  string key;
+  string value;
+
+  // open target file for reading line by line
+  std::ifstream filestream(LinuxParser::kProcDirectory + LinuxParser::kStatFilename);
+  if (filestream.is_open()) {
+    while (std::getline(filestream, line)) {
+      // split line at spaces to get first 2 parts
+      std::istringstream linestream(line);
+      if (linestream >> key >> value) {
+        // check if key is equal to 'procs_running'
+        if (key == "procs_running") {
+          return std::stoi(value);
+        }
+      }
+    }
+  }
+  return 0;
+}
 
 // TODO: Read and return the command associated with a process
 // REMOVE: [[maybe_unused]] once you define the function
