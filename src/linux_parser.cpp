@@ -74,13 +74,13 @@ unordered_map<string, string> ReadMemoryInfoFile() {
   string line;
   string key;
   string value;
-  std::ifstream filestream(kProcDirectory + kMeminfoFilename);
+  std::ifstream filestream(LinuxParser::kProcDirectory + LinuxParser::kMeminfoFilename);
   if (filestream.is_open()) {
     while (std::getline(filestream, line)) {
       std::istringstream linestream(line);
       if (linestream >> key >> value) {
         // remove last character of the key ':'
-        key.erase(key.end());
+        key.erase(key.size()-1);
         // add the key/value pair in the memory info map
         memInfo.insert({ key, value });
       }
@@ -95,7 +95,7 @@ float LinuxParser::MemoryUtilization() {
   float freeMemory = 0.0f;
 
   // Read The System file '/proc/meminfo'
-  unordered_map<string, string> &memInfo = ReadMemoryInfoFile();
+  const unordered_map<string, string> &memInfo = ReadMemoryInfoFile();
   
   // Check if the Attribute 'MemTotal' exists in the map
   auto memTotalElemPtr = memInfo.find("MemTotal");
@@ -109,7 +109,8 @@ float LinuxParser::MemoryUtilization() {
     freeMemory = stof(memFreeElemPtr->second);
   }
 
-  return totalMemory - freeMemory;
+  // Return The Utilization Percentage
+  return (totalMemory - freeMemory) / totalMemory;
 }
 
 // TODO: Read and return the system uptime
