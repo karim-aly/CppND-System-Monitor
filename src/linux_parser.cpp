@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "linux_parser.h"
 
@@ -9,8 +10,9 @@ using std::stof;
 using std::string;
 using std::to_string;
 using std::vector;
+using std::unordered_map;
 
-// DONE: An example of how to read data from the filesystem
+// An example of how to read data from the filesystem
 string LinuxParser::OperatingSystem() {
   string line;
   string key;
@@ -33,7 +35,7 @@ string LinuxParser::OperatingSystem() {
   return value;
 }
 
-// DONE: An example of how to read data from the filesystem
+// An example of how to read data from the filesystem
 string LinuxParser::Kernel() {
   string os, kernel;
   string line;
@@ -46,7 +48,7 @@ string LinuxParser::Kernel() {
   return kernel;
 }
 
-// BONUS: Update this to use std::filesystem
+// TODO Later: Update this to use std::filesystem
 vector<int> LinuxParser::Pids() {
   vector<int> pids;
   DIR* directory = opendir(kProcDirectory.c_str());
@@ -66,8 +68,49 @@ vector<int> LinuxParser::Pids() {
   return pids;
 }
 
-// TODO: Read and return the system memory utilization
-float LinuxParser::MemoryUtilization() { return 0.0; }
+// Helper function to read '/proc/meminfo' file and return the info in a map
+unordered_map<string, string> ReadMemoryInfoFile() {
+  unordered_map<string, string> memInfo;
+  string line;
+  string key;
+  string value;
+  std::ifstream filestream(kProcDirectory + kMeminfoFilename);
+  if (filestream.is_open()) {
+    while (std::getline(filestream, line)) {
+      std::istringstream linestream(line);
+      if (linestream >> key >> value) {
+        // remove last character of the key ':'
+        key.erase(key.end());
+        // add the key/value pair in the memory info map
+        memInfo.insert({ key, value });
+      }
+    }
+  }
+  return memInfo;
+}
+
+// Read and return the system memory utilization
+float LinuxParser::MemoryUtilization() {
+  float totalMemory = 0.0f;
+  float freeMemory = 0.0f;
+
+  // Read The System file '/proc/meminfo'
+  unordered_map<string, string> &memInfo = ReadMemoryInfoFile();
+  
+  // Check if the Attribute 'MemTotal' exists in the map
+  auto memTotalElemPtr = memInfo.find("MemTotal");
+  if (memTotalElemPtr != memInfo.end()) {
+    totalMemory = stof(memTotalElemPtr->second);
+  }
+
+  // Check if the Attribute 'MemFree' exists in the map
+  auto memFreeElemPtr = memInfo.find("MemFree");
+  if (memFreeElemPtr != memInfo.end()) {
+    freeMemory = stof(memFreeElemPtr->second);
+  }
+
+  return totalMemory - freeMemory;
+}
 
 // TODO: Read and return the system uptime
 long LinuxParser::UpTime() { return 0; }
