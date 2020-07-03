@@ -140,18 +140,102 @@ long LinuxParser::UpTime() {
   return 0;
 }
 
-// TODO: Read and return the number of jiffies for the system
-long LinuxParser::Jiffies() { return 0; }
+// Read and return the number of jiffies for the system
+long LinuxParser::Jiffies() {
+  const vector<string> &cpu_readings = CpuUtilization();
 
-// TODO: Read and return the number of active jiffies for a PID
-// REMOVE: [[maybe_unused]] once you define the function
-long LinuxParser::ActiveJiffies(int pid[[maybe_unused]]) { return 0; }
+  // check first that the cpu_readings are indeed 10 values
+  if (cpu_readings.size() != 10) {
+    return 0;
+  }
 
-// TODO: Read and return the number of active jiffies for the system
-long LinuxParser::ActiveJiffies() { return 0; }
+  // unpack the vector and convert each reading to long
+  long user    = std::stol(cpu_readings[CPUStates::kUser_]);
+  long nice    = std::stol(cpu_readings[CPUStates::kNice_]);
+  long system  = std::stol(cpu_readings[CPUStates::kSystem_]);
+  long idle    = std::stol(cpu_readings[CPUStates::kIdle_]);
+  long iowait  = std::stol(cpu_readings[CPUStates::kIOwait_]);
+  long irq     = std::stol(cpu_readings[CPUStates::kIRQ_]);
+  long softirq = std::stol(cpu_readings[CPUStates::kSoftIRQ_]);
+  long steal   = std::stol(cpu_readings[CPUStates::kSteal_]);
+  long guest   = std::stol(cpu_readings[CPUStates::kGuest_]);
+  long guest_nice = std::stol(cpu_readings[CPUStates::kGuestNice_]);
 
-// TODO: Read and return the number of idle jiffies for the system
-long LinuxParser::IdleJiffies() { return 0; }
+  // calculate the cpu idle time
+  long Idle = idle + iowait;
+
+  // calculate the cpu non-idle time
+  long NonIdle = user + nice + system + irq + softirq + steal + guest + guest_nice;
+
+  // cpu total time
+  long Total = Idle + NonIdle;
+
+  return Total;
+}
+
+// Read and return the number of active jiffies for a PID
+long LinuxParser::ActiveJiffies(int pid) {
+  const vector<long> &cpu_readings = CpuUtilization(pid);
+
+  // check first that the cpu_readings are indeed 4 values
+  if (cpu_readings.size() != 10) {
+    return 0;
+  }
+
+  // unpack the vector and convert each reading to long
+  long utime  = cpu_readings[ProcessCPUStates::kutime_];
+  long stime  = cpu_readings[ProcessCPUStates::kstime_];
+  long cutime = cpu_readings[ProcessCPUStates::kcutime_];
+  long cstime = cpu_readings[ProcessCPUStates::kcstime_];
+
+  long total_active = utime + stime + cutime + cstime;
+
+  return total_active;
+}
+
+// Read and return the number of active jiffies for the system
+long LinuxParser::ActiveJiffies() {
+  const vector<string> &cpu_readings = CpuUtilization();
+
+  // check first that the cpu_readings are indeed 10 values
+  if (cpu_readings.size() != 10) {
+    return 0;
+  }
+
+  // unpack the vector and convert each reading to long
+  long user    = std::stol(cpu_readings[CPUStates::kUser_]);
+  long nice    = std::stol(cpu_readings[CPUStates::kNice_]);
+  long system  = std::stol(cpu_readings[CPUStates::kSystem_]);
+  long irq     = std::stol(cpu_readings[CPUStates::kIRQ_]);
+  long softirq = std::stol(cpu_readings[CPUStates::kSoftIRQ_]);
+  long steal   = std::stol(cpu_readings[CPUStates::kSteal_]);
+  long guest   = std::stol(cpu_readings[CPUStates::kGuest_]);
+  long guest_nice = std::stol(cpu_readings[CPUStates::kGuestNice_]);
+
+  // calculate the cpu non-idle time
+  long NonIdle = user + nice + system + irq + softirq + steal + guest + guest_nice;
+
+  return NonIdle;
+}
+
+// Read and return the number of idle jiffies for the system
+long LinuxParser::IdleJiffies() {
+  const vector<string> &cpu_readings = CpuUtilization();
+
+  // check first that the cpu_readings are indeed 10 values
+  if (cpu_readings.size() != 10) {
+    return 0;
+  }
+
+  // unpack the vector and convert each reading to long
+  long idle   = std::stol(cpu_readings[CPUStates::kIdle_]);
+  long iowait = std::stol(cpu_readings[CPUStates::kIOwait_]);
+
+  // calculate the cpu idle time
+  long Idle = idle + iowait;
+
+  return Idle;
+}
 
 // Read and return CPU utilization
 vector<string> LinuxParser::CpuUtilization() {
@@ -229,58 +313,36 @@ int LinuxParser::RunningProcesses() {
 }
 
 // Read and return the cpu usage numbers associated with a process
-std::pair<long, long> LinuxParser::CpuUsage(int pid) {
+vector<long> LinuxParser::CpuUtilization(int pid) {
   string line;
   string buffer;
-  string utime, stime, cutime, cstime;
-  std::pair<long, long> cpu_usage_data{0,0};
+  vector<long> cpu_readings{};
 
   // open target file for reading line by line
   std::ifstream filestream(LinuxParser::kProcDirectory + to_string(pid) + LinuxParser::kStatFilename);
   if (filestream.is_open()) {
     if (std::getline(filestream, line)) {
-      // split line at spaces and skip till we reach 13th part
+      // split line at spaces and skip till we reach 13th element
       std::istringstream linestream(line);
       bool utime_reached = true;
-      for (int i=0; i<13; i++) {
+      for (int i=1; i<=13; i++) {
         if (!(linestream >> buffer)) {
           utime_reached = false;
           break;
         }
       }
 
-      // try to read the 4 cpu usage stat readings (utime, stime, cutime, cstime)
       if (utime_reached) {
-        if (linestream >> utime >> stime >> cutime >> cstime) {
-          long total_clock_ticks = std::stol(utime) + std::stol(stime) + std::stol(cutime) + std::stol(cstime);
-          long total_seconds = total_clock_ticks / sysconf(_SC_CLK_TCK);
-          cpu_usage_data.first = total_seconds;
+        // read the 4 cpu usage stat readings (utime, stime, cutime, cstime)
+        for (int i=14; i<=17; i++) {
+          if (linestream >> buffer) {
+            cpu_readings.push_back(std::stol(buffer));
+          }
         }
-      }
-
-      // skip till we reach 22nd part
-      bool starttime_found = true;
-      for (int i=0; i<5; i++) {
-        if (!(linestream >> buffer)) {
-          starttime_found = false;
-          break;
-        }
-      }
-
-      // try to read the process starttime
-      if (starttime_found) {
-        long starttime_clock_ticks = std::stol(buffer);
-        long starttime_seconds = starttime_clock_ticks / sysconf(_SC_CLK_TCK);
-
-        // get the system total uptime in seconds
-        long uptime = LinuxParser::UpTime();
-
-        // total elapsed time in seconds since the process started
-        cpu_usage_data.second = uptime - starttime_seconds;
       }
     }
   }
-  return cpu_usage_data;
+  return cpu_readings;
 }
 
 // Read and return the command associated with a process

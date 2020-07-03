@@ -19,22 +19,22 @@ std::pair<long, long> CalculateAggregate(const vector<string> &cpu_readings) {
   }
 
   // unpack the vector and convert each reading to long
-  long user       =   stol(cpu_readings[CPUStates::kUser_]);
-  long nice       =   stol(cpu_readings[CPUStates::kNice_]);
-  long system     =   stol(cpu_readings[CPUStates::kSystem_]);
-  long idle       =   stol(cpu_readings[CPUStates::kIdle_]);
-  long iowait     =   stol(cpu_readings[CPUStates::kIOwait_]);
-  long irq        =   stol(cpu_readings[CPUStates::kIRQ_]);
-  long softirq    =   stol(cpu_readings[CPUStates::kSoftIRQ_]);
-  long steal      =   stol(cpu_readings[CPUStates::kSteal_]);
-  long guest      =   stol(cpu_readings[CPUStates::kGuest_]);
-  long guest_nice =   stol(cpu_readings[CPUStates::kGuestNice_]);
+  long user    = stol(cpu_readings[CPUStates::kUser_]);
+  long nice    = stol(cpu_readings[CPUStates::kNice_]);
+  long system  = stol(cpu_readings[CPUStates::kSystem_]);
+  long idle    = stol(cpu_readings[CPUStates::kIdle_]);
+  long iowait  = stol(cpu_readings[CPUStates::kIOwait_]);
+  long irq     = stol(cpu_readings[CPUStates::kIRQ_]);
+  long softirq = stol(cpu_readings[CPUStates::kSoftIRQ_]);
+  long steal   = stol(cpu_readings[CPUStates::kSteal_]);
+  long guest   = stol(cpu_readings[CPUStates::kGuest_]);
+  long guest_nice = stol(cpu_readings[CPUStates::kGuestNice_]);
 
   // calculate the cpu idle time
   long Idle = idle + iowait;
 
   // calculate the cpu non-idle time
-  long NonIdle = user + nice + system + irq + softirq + steal;
+  long NonIdle = user + nice + system + irq + softirq + steal + guest + guest_nice;
 
   // cpu total time
   long Total = Idle + NonIdle;

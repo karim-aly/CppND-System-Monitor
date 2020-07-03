@@ -58,7 +58,7 @@ vector<Process>& System::Processes() {
     }
 
     // Sort processes according to the overloaded operator '<' in Process class
-    std::sort(processes_.begin(), processes_.end());
+    std::sort(processes_.begin(), processes_.end(), std::greater <>());
 
     return processes_;
 }

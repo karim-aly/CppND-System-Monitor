@@ -25,21 +25,24 @@ int Process::Pid() const { return pid; }
 
 // Return this process's CPU utilization
 float Process::CpuUtilization() {
-  // Read the current CPU Readings
-  const std::pair<long, long> current = LinuxParser::CpuUsage(Pid());
+  // Get Process Current Total Active Time
+  long processActiveJiffies = LinuxParser::ActiveJiffies(Pid());
 
-  // Get The Total CPU Time and Total Idle Time from The Previous Reading
+  // Get System Current Total Active Time
+  long systemTotalJiffies = LinuxParser::Jiffies();
+
+  // Get The Process Total Active Time and System Total Active Time from The Previous Readings
   auto previous = previous_cpu_readings;
 
   // Calculate The Delta
-  const long delta_cpu_time = current.first - previous.first;
-  const long delta_elapsed_time = current.second - previous.second;
+  const long delta_process_time = processActiveJiffies - previous.first;
+  const long delta_system_time  = systemTotalJiffies - previous.second;
 
   // Set The Previous Readings to be the new current readings
-  previous_cpu_readings = current;
+  previous_cpu_readings = {processActiveJiffies, systemTotalJiffies};
 
   // return the percentage cpu utilization
-  cpuUtilizationSaved = delta_cpu_time * 1.0f / delta_elapsed_time;
+  cpuUtilizationSaved = delta_process_time * 1.0f / delta_system_time;
   return cpuUtilizationSaved;
 }
 
@@ -58,4 +61,9 @@ long int Process::UpTime() const { return LinuxParser::UpTime(Pid()); }
 // Overload the "less than" comparison operator for Process objects
 bool Process::operator<(Process const& a) const {
   return this->cpuUtilizationSaved < a.cpuUtilizationSaved;
+}
+
+// Overload the "greater than" comparison operator for Process objects
+bool Process::operator>Process const& a) const {
+  return this->cpuUtilizationSaved > a.cpuUtilizationSaved;
 }
