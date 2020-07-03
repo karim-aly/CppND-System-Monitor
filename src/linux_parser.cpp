@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <unistd.h>
 
 #include "linux_parser.h"
 
@@ -225,9 +226,24 @@ int LinuxParser::RunningProcesses() {
   return 0;
 }
 
-// TODO: Read and return the command associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Command(int pid[[maybe_unused]]) { return string(); }
+// Read and return the command associated with a process
+string LinuxParser::Command(int pid) {
+  string line;
+  string cmdline;
+
+  // open target file for reading line by line
+  std::ifstream filestream(LinuxParser::kProcDirectory + to_string(pid) + LinuxParser::kCmdlineFilename);
+  if (filestream.is_open()) {
+    if (std::getline(filestream, line)) {
+      // split line at spaces to get first part
+      std::istringstream linestream(line);
+      if (linestream >> cmdline) {
+        return cmdline;
+      }
+    }
+  }
+  return string();
+}
 
 // TODO: Read and return the memory used by a process
 // REMOVE: [[maybe_unused]] once you define the function
@@ -241,6 +257,31 @@ string LinuxParser::Uid(int pid[[maybe_unused]]) { return string(); }
 // REMOVE: [[maybe_unused]] once you define the function
 string LinuxParser::User(int pid[[maybe_unused]]) { return string(); }
 
-// TODO: Read and return the uptime of a process
-// REMOVE: [[maybe_unused]] once you define the function
-long LinuxParser::UpTime(int pid[[maybe_unused]]) { return 0; }
+// Read and return the uptime of a process
+long LinuxParser::UpTime(int pid) {
+  string line;
+  string buffer;
+
+  // open target file for reading line by line
+  std::ifstream filestream(LinuxParser::kProcDirectory + to_string(pid) + LinuxParser::kStatFilename);
+  if (filestream.is_open()) {
+    if (std::getline(filestream, line)) {
+      // split line at spaces to get 22nd part
+      std::istringstream linestream(line);
+      bool starttime_found = true;
+      for (int i=0; i<22; i++) {
+        if (!(linestream >> buffer)) {
+          starttime_found = false;
+          break;
+        }
+      }
+
+      if (starttime_found) {
+        long clock_ticks = std::stol(buffer);
+        long seconds = clock_ticks / sysconf(_SC_CLK_TCK);
+        return seconds;
+      }
+    }
+  }
+  return 0;
+}

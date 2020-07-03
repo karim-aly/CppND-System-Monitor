@@ -3,6 +3,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "process.h"
 #include "processor.h"
@@ -14,11 +15,50 @@ using std::size_t;
 using std::string;
 using std::vector;
 
-// TODO: Return the system's CPU
+// Return the system's CPU
 Processor& System::Cpu() { return cpu_; }
 
-// TODO: Return a container composed of the system's processes
-vector<Process>& System::Processes() { return processes_; }
+// Helper function to check if a process with certain pid exists in processes_ vector
+int getIndexOf(vector<Process>& processes_, int pid) {
+    // loop over all processes
+    for (int i=0; i<processes_.size(); i++) {
+        // check if required pid exists
+        if (processes_[i].Pid() == pid) {
+            return i;
+        }
+    }
+
+    // no process with this pid found
+    return -1;
+} 
+
+// Return a container composed of the system's processes
+vector<Process>& System::Processes() {
+    // Get Current Processes PIDs
+    const vector<int> &pids = LinuxParser::Pids();
+
+    // Loop over all PIDs available
+    for (int pid : pids) {
+        // check if this pid exists in processes_ vector
+        int index = getIndexOf(processes_, pid);
+
+        // create a new process object if this pid isn't in processes_ vector already
+        Process* process;
+        if (index == -1) {
+            Process process(pid);
+            processes_.emplace_back(process);
+        }
+    }
+
+    // Loop over all processes and check if any should be removed
+    for (int i=0; i<processes_.size(); i++) {
+        auto process = processes_[i];
+        if (std::find(pids.begin(), pids.end(), process.Pid()) == pids.end()) {
+            processes_.erase(processes_.begin() + i);
+        }
+    }
+    return processes_;
+}
 
 // Return the system's kernel identifier (string)
 std::string System::Kernel() { return LinuxParser::Kernel(); }
