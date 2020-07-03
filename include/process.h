@@ -9,12 +9,12 @@ It contains relevant attributes as shown below
 class Process {
  public:
   Process(int);
-  int Pid();
-  std::string User();
-  std::string Command();
-  float CpuUtilization();                  // TODO: See src/process.cpp
-  std::string Ram();
-  long int UpTime();
+  int Pid() const;
+  std::string User() const;
+  std::string Command() const;
+  float CpuUtilization() const;                  // TODO: See src/process.cpp
+  std::string Ram() const;
+  long int UpTime() const;
   bool operator<(Process const& a) const;
 
  private:

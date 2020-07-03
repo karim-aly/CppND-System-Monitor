@@ -21,7 +21,7 @@ Processor& System::Cpu() { return cpu_; }
 // Helper function to check if a process with certain pid exists in processes_ vector
 int getIndexOf(vector<Process>& processes_, int pid) {
     // loop over all processes
-    for (int i=0; i<processes_.size(); i++) {
+    for (unsigned int i=0; i<processes_.size(); i++) {
         // check if required pid exists
         if (processes_[i].Pid() == pid) {
             return i;
@@ -43,7 +43,6 @@ vector<Process>& System::Processes() {
         int index = getIndexOf(processes_, pid);
 
         // create a new process object if this pid isn't in processes_ vector already
-        Process* process;
         if (index == -1) {
             Process process(pid);
             processes_.emplace_back(process);
@@ -51,7 +50,7 @@ vector<Process>& System::Processes() {
     }
 
     // Loop over all processes and check if any should be removed
-    for (int i=0; i<processes_.size(); i++) {
+    for (unsigned int i=0; i<processes_.size(); i++) {
         auto process = processes_[i];
         if (std::find(pids.begin(), pids.end(), process.Pid()) == pids.end()) {
             processes_.erase(processes_.begin() + i);
