@@ -123,7 +123,7 @@ long LinuxParser::UpTime() {
   string idletime;
 
   // open target file for reading line by line
-  std::ifstream filestream(LinuxParser::kProcDirectory + LinuxParser::kStatFilename);
+  std::ifstream filestream(LinuxParser::kProcDirectory + LinuxParser::kUptimeFilename);
   if (filestream.is_open()) {
     if (std::getline(filestream, line)) {
       // split line at spaces to get first 2 parts
