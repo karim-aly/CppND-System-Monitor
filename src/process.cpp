@@ -24,7 +24,7 @@ Process::Process(int pid) {
 int Process::Pid() const { return pid; }
 
 // Return this process's CPU utilization
-float Process::CpuUtilization() const {
+float Process::CpuUtilization() {
   // Read the current CPU Readings
   const std::pair<long, long> current = LinuxParser::CpuUsage(Pid());
 
@@ -39,7 +39,8 @@ float Process::CpuUtilization() const {
   previous_cpu_readings = current;
 
   // return the percentage cpu utilization
-  return delta_cpu_time * 1.0f / delta_elapsed_time;
+  cpuUtilizationSaved = delta_cpu_time * 1.0f / delta_elapsed_time;
+  return cpuUtilizationSaved;
 }
 
 // Return the command that generated this process
@@ -56,5 +57,5 @@ long int Process::UpTime() const { return LinuxParser::UpTime(Pid()); }
 
 // Overload the "less than" comparison operator for Process objects
 bool Process::operator<(Process const& a) const {
-  return this->CpuUtilization() < a.CpuUtilization();
+  return this->cpuUtilizationSaved < a.cpuUtilizationSaved;
 }
