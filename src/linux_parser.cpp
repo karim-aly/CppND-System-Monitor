@@ -4,6 +4,8 @@
 #include <vector>
 #include <unordered_map>
 #include <unistd.h>
+#include <sstream>
+#include <iomanip>
 
 #include "linux_parser.h"
 
@@ -340,7 +342,11 @@ string LinuxParser::Ram(int pid) {
   // Convert from KB to MB
   totalMemory /= 1000;
 
-  return to_string(totalMemory);
+  // format and convert float to string
+  std::ostringstream stream;
+  stream << std::fixed << std::setprecision(1) << totalMemory;
+
+  return stream.str();
 }
 
 // Read and return the user ID associated with a process
