@@ -47,6 +47,7 @@ long ActiveJiffies(int pid);
 long IdleJiffies();
 
 // Processes
+std::pair<long, long> CpuUsage(int pid);
 std::string Command(int pid);
 std::string Ram(int pid);
 std::string Uid(int pid);

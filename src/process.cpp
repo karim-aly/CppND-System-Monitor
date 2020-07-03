@@ -23,8 +23,24 @@ Process::Process(int pid) {
 // Return this process's ID
 int Process::Pid() const { return pid; }
 
-// TODO: Return this process's CPU utilization
-float Process::CpuUtilization() const { return 0; }
+// Return this process's CPU utilization
+float Process::CpuUtilization() const {
+  // Read the current CPU Readings
+  const std::pair<long, long> current = LinuxParser::CpuUsage(Pid());
+
+  // Get The Total CPU Time and Total Idle Time from The Previous Reading
+  auto previous = previous_cpu_readings;
+
+  // Calculate The Delta
+  const long delta_cpu_time = current.first - previous.first;
+  const long delta_elapsed_time = current.second - previous.second;
+
+  // Set The Previous Readings to be the new current readings
+  previous_cpu_readings = current;
+
+  // return the percentage cpu utilization
+  return delta_cpu_time * 1.0f / delta_elapsed_time;
+}
 
 // Return the command that generated this process
 string Process::Command() const { return this->command; }

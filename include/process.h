@@ -21,6 +21,7 @@ class Process {
   int pid;
   std::string user;
   std::string command;
+  std::pair<long, long> previous_cpu_readings{0,0};
 };
 
 #endif

@@ -9,7 +9,7 @@ class Processor {
   float Utilization();
 
  private:
-  std::vector<std::string> previous_cpu_readings;
+  std::pair<long, long> previous_cpu_readings{0,0};
 };
 
 #endif

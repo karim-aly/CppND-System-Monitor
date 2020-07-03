@@ -226,6 +226,61 @@ int LinuxParser::RunningProcesses() {
   return 0;
 }
 
+// Read and return the cpu usage numbers associated with a process
+std::pair<long, long> LinuxParser::CpuUsage(int pid) {
+  string line;
+  string buffer;
+  string utime, stime, cutime, cstime;
+  std::pair<long, long> cpu_usage_data{0,0};
+
+  // open target file for reading line by line
+  std::ifstream filestream(LinuxParser::kProcDirectory + to_string(pid) + LinuxParser::kStatFilename);
+  if (filestream.is_open()) {
+    if (std::getline(filestream, line)) {
+      // split line at spaces and skip till we reach 13th part
+      std::istringstream linestream(line);
+      bool utime_reached = true;
+      for (int i=0; i<13; i++) {
+        if (!(linestream >> buffer)) {
+          utime_reached = false;
+          break;
+        }
+      }
+
+      // try to read the 4 cpu usage stat readings (utime, stime, cutime, cstime)
+      if (utime_reached) {
+        if (linestream >> utime >> stime >> cutime >> cstime) {
+          long total_clock_ticks = std::stol(utime) + std::stol(stime) + std::stol(cutime) + std::stol(cstime);
+          long total_seconds = total_clock_ticks / sysconf(_SC_CLK_TCK);
+          cpu_usage_data.first = total_seconds;
+        }
+      }
+
+      // skip till we reach 22nd part
+      bool starttime_found = true;
+      for (int i=0; i<5; i++) {
+        if (!(linestream >> buffer)) {
+          starttime_found = false;
+          break;
+        }
+      }
+
+      // try to read the process starttime
+      if (starttime_found) {
+        long starttime_clock_ticks = std::stol(buffer);
+        long starttime_seconds = starttime_clock_ticks / sysconf(_SC_CLK_TCK);
+
+        // get the system total uptime in seconds
+        long uptime = LinuxParser::UpTime();
+
+        // total elapsed time in seconds since the process started
+        cpu_usage_data.second = uptime - starttime_seconds;
+      }
+    }
+  }
+  return cpu_usage_data;
+}
+
 // Read and return the command associated with a process
 string LinuxParser::Command(int pid) {
   string line;
@@ -245,17 +300,89 @@ string LinuxParser::Command(int pid) {
   return string();
 }
 
-// TODO: Read and return the memory used by a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Ram(int pid[[maybe_unused]]) { return string(); }
+// Helper function to read '/proc/[pid]/status' file and return the info in a map
+unordered_map<string, string> ReadProcessStatusFile(int pid) {
+  unordered_map<string, string> statusInfo;
+  string line;
+  string key;
+  string value;
 
-// TODO: Read and return the user ID associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Uid(int pid[[maybe_unused]]) { return string(); }
+  // open target file for reading line by line
+  std::ifstream filestream(LinuxParser::kProcDirectory + to_string(pid) + LinuxParser::kStatusFilename);
+  if (filestream.is_open()) {
+    while (std::getline(filestream, line)) {
+      // split line at spaces to get first 2 parts
+      std::istringstream linestream(line);
+      if (linestream >> key >> value) {
+        // remove last character of the key ':'
+        key.erase(key.size()-1);
+        // add the key/value pair in the memory info map
+        statusInfo.insert({ key, value });
+      }
+    }
+  }
+  return statusInfo;
+}
 
-// TODO: Read and return the user associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::User(int pid[[maybe_unused]]) { return string(); }
+// Read and return the memory used by a process
+string LinuxParser::Ram(int pid) {
+  float totalMemory = 0.0f;
+
+  // Read The System file '/proc/[pid]/status'
+  const unordered_map<string, string> &statusInfo = ReadProcessStatusFile(pid);
+  
+  // Check if the Attribute 'MemTotal' exists in the map
+  auto vmSizeElemPtr = statusInfo.find("VmSize");
+  if (vmSizeElemPtr != statusInfo.end()) {
+    totalMemory = stof(vmSizeElemPtr->second);
+  }
+
+  // Convert from KB to MB
+  totalMemory /= 1000;
+
+  return to_string(totalMemory);
+}
+
+// Read and return the user ID associated with a process
+string LinuxParser::Uid(int pid) {
+  // Read The System file '/proc/[pid]/status'
+  const unordered_map<string, string> &statusInfo = ReadProcessStatusFile(pid);
+  
+  // Check if the Attribute 'MemTotal' exists in the map
+  auto uidElemPtr = statusInfo.find("Uid");
+  if (uidElemPtr != statusInfo.end()) {
+    return uidElemPtr->second;
+  }
+
+  return string();
+}
+
+// Read and return the user associated with a process
+string LinuxParser::User(int pid) {
+  string line;
+  string name, x, uid1, uid2;
+
+  // Get The Uid associated with the process
+  string uid = Uid(pid);
+
+  // open target file for reading line by line
+  std::ifstream filestream(LinuxParser::kPasswordPath);
+  if (filestream.is_open()) {
+    while (std::getline(filestream, line)) {
+       // replace all colons with spaces first
+      std::replace(line.begin(), line.end(), ':', ' ');
+
+      // split line at spaces to get first part
+      std::istringstream linestream(line);
+      if (linestream >> name >> x >> uid1 >> uid2) {
+        if (uid1 == uid && uid2 == uid) {
+          return name;
+        }
+      }
+    }
+  }
+  return string();
+}
 
 // Read and return the uptime of a process
 long LinuxParser::UpTime(int pid) {

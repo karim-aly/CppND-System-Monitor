@@ -8,6 +8,8 @@ using std::vector;
 using std::string;
 using std::stol;
 
+using LinuxParser::CPUStates;
+
 
 // Helper Function to Calculate The Total Utilization and Idle Time of CPU
 std::pair<long, long> CalculateAggregate(const vector<string> &cpu_readings) {
@@ -17,16 +19,16 @@ std::pair<long, long> CalculateAggregate(const vector<string> &cpu_readings) {
   }
 
   // unpack the vector and convert each reading to long
-  long user = stol(cpu_readings[0]);
-  long nice = stol(cpu_readings[1]);
-  long system = stol(cpu_readings[2]);
-  long idle = stol(cpu_readings[3]);
-  long iowait = stol(cpu_readings[4]);
-  long irq = stol(cpu_readings[5]);
-  long softirq = stol(cpu_readings[6]);
-  long steal = stol(cpu_readings[7]);
-  long guest = stol(cpu_readings[8]);
-  long guest_nice = stol(cpu_readings[9]);
+  long user       =   stol(cpu_readings[CPUStates::kUser_]);
+  long nice       =   stol(cpu_readings[CPUStates::kNice_]);
+  long system     =   stol(cpu_readings[CPUStates::kSystem_]);
+  long idle       =   stol(cpu_readings[CPUStates::kIdle_]);
+  long iowait     =   stol(cpu_readings[CPUStates::kIOwait_]);
+  long irq        =   stol(cpu_readings[CPUStates::kIRQ_]);
+  long softirq    =   stol(cpu_readings[CPUStates::kSoftIRQ_]);
+  long steal      =   stol(cpu_readings[CPUStates::kSteal_]);
+  long guest      =   stol(cpu_readings[CPUStates::kGuest_]);
+  long guest_nice =   stol(cpu_readings[CPUStates::kGuestNice_]);
 
   // calculate the cpu idle time
   long Idle = idle + iowait;
@@ -48,8 +50,8 @@ float Processor::Utilization() {
   // Get The Total CPU Time and Total Idle Time for Current Reading
   auto current = CalculateAggregate(cpu_readings);
 
-  // Get The Total CPU Time and Total Idle Time for Current Reading
-  auto previous = CalculateAggregate(previous_cpu_readings);
+  // Get The Total CPU Time and Total Idle Time from The Previous Reading
+  auto previous = previous_cpu_readings;
 
   // Calculate The Delta
   const long delta_total = current.first - previous.first;
@@ -57,7 +59,7 @@ float Processor::Utilization() {
   const long delta_active = delta_total - delta_idle;
 
   // Set The Previous Readings to be the new current readings
-  previous_cpu_readings = cpu_readings;
+  previous_cpu_readings = current;
 
   // return the percentage cpu utilization
   return delta_active * 1.0f / delta_total;

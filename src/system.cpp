@@ -56,6 +56,10 @@ vector<Process>& System::Processes() {
             processes_.erase(processes_.begin() + i);
         }
     }
+
+    // Sort processes according to the overloaded operator '<' in Process class
+    std::sort(processes_.begin(), processes_.end());
+
     return processes_;
 }
 
