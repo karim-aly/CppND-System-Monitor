@@ -54,6 +54,11 @@ float Processor::Utilization() {
   // Calculate The Delta
   const long delta_total = current.first - previous.first;
   const long delta_idle = current.second - previous.second;
+  const long delta_active = delta_total - delta_idle;
 
-  return (delta_total - delta_idle) * 1.0f / delta_total;
+  // Set The Previous Readings to be the new current readings
+  previous_cpu_readings = cpu_readings;
+
+  // return the percentage cpu utilization
+  return delta_active * 1.0f / delta_total;
 }
