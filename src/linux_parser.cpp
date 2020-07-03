@@ -178,7 +178,7 @@ long LinuxParser::ActiveJiffies(int pid) {
   const vector<long> &cpu_readings = CpuUtilization(pid);
 
   // check first that the cpu_readings are indeed 4 values
-  if (cpu_readings.size() != 10) {
+  if (cpu_readings.size() != 4) {
     return 0;
   }
 
@@ -404,11 +404,7 @@ string LinuxParser::Ram(int pid) {
   // Convert from KB to MB
   totalMemory /= 1000;
 
-  // format and convert float to string
-  std::ostringstream stream;
-  stream << std::fixed << std::setprecision(1) << totalMemory;
-
-  return stream.str();
+  return to_string(static_cast<long>(totalMemory));
 }
 
 // Read and return the user ID associated with a process

@@ -64,6 +64,6 @@ bool Process::operator<(Process const& a) const {
 }
 
 // Overload the "greater than" comparison operator for Process objects
-bool Process::operator>Process const& a) const {
+bool Process::operator>(Process const& a) const {
   return this->cpuUtilizationSaved > a.cpuUtilizationSaved;
 }

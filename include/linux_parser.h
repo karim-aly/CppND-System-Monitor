@@ -55,7 +55,7 @@ long ActiveJiffies(int pid);
 long IdleJiffies();
 
 // Processes
-std::vector<long> LinuxParser::CpuUtilization(int pid);
+std::vector<long> CpuUtilization(int pid);
 std::string Command(int pid);
 std::string Ram(int pid);
 std::string Uid(int pid);
