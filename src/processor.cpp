@@ -12,7 +12,7 @@ using std::stol;
 // Helper Function to Calculate The Total Utilization and Idle Time of CPU
 std::pair<long, long> CalculateAggregate(const vector<string> &cpu_readings) {
   // check first that the cpu_readings are indeed 10 values
-  if (cpu_readings.size() == 10) {
+  if (cpu_readings.size() != 10) {
     return {0,0};
   }
 
